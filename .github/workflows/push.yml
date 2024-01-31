@@ -1,0 +1,58 @@
+name: example-push
+
+on:
+    push:
+        branches: [ "master" ]
+        paths:
+            - 'foo/**'
+            - '.github/workflows/push.yml'
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        id: checkout
+        with:
+          fetch-depth: 0
+
+      - name: monotag version
+        id: monotag
+        run: |
+          tag=$(npx -y monotag@1.6.2 tag --path ${{ inputs.gradle-working-directory }} --separator=/v)
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: git cliff
+        id: changelog
+        uses: orhun/git-cliff-action@v2
+        with:
+          config: config/cliff.toml
+          args: --verbose --unreleased --tag ${{ steps.monotag.outputs.tag }} --include-path "foo/**"
+        env:
+          OUTPUT: foo/CHANGELOG.md
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPO: spiral-house/test-repo
+          GIT_CLIFF__CHANGELOG__HEADER: |
+            # Hello from Foo
+            Testing a custom header here.
+            <!-- changelog -->
+            ## Changelog
+
+      - name: Create Release
+        #if: ${{ !inputs.act }}
+        id: create-release
+        uses: ncipollo/release-action@v1.13.0
+        with:
+          allowUpdates: true
+          draft: true
+          makeLatest: true
+          name: ${{ steps.monotag.outputs.tag }}
+          tag: ${{ steps.monotag.outputs.tag }}
+          body: ${{ steps.changelog.outputs.content }}
+          token: ${{ github.token }}
+          prerelease: true
