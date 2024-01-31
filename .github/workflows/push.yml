@@ -24,7 +24,7 @@ jobs:
       - name: monotag version
         id: monotag
         run: |
-          tag=$(npx -y monotag@1.6.2 tag --path ${{ inputs.gradle-working-directory }} --separator=/v)
+          tag=$(npx -y monotag@1.6.2 tag --path 'foo' --separator=/v)
           echo "tag=$tag" >> $GITHUB_OUTPUT
 
       - name: git cliff
@@ -36,7 +36,7 @@ jobs:
         env:
           OUTPUT: foo/CHANGELOG.md
           GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_REPO: spiral-house/test-repo
+          GITHUB_REPO: clari/test-repo
           GIT_CLIFF__CHANGELOG__HEADER: |
             # Hello from Foo
             Testing a custom header here.
